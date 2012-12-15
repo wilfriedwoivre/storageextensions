@@ -43,6 +43,13 @@ namespace AzureStorageExtensions
                         constant = binary.Right as ConstantExpression;
                         result.Insert(0, string.Format("{0} ({1} {2} {3}) ", ope.TableOperand.GetTableOperand(), member.Member.Name, binary.GetOperator(), constant.FormatConstantExpression()).TrimStart());
                     }
+                    else if (binary.Left is ConstantExpression && binary.Right is MemberExpression)
+                    {
+                        // like n => "42" == n.PartitionKey
+                        member = binary.Right as MemberExpression;
+                        constant = binary.Left as ConstantExpression;
+                        result.Insert(0, string.Format("{0} ({1} {2} {3}) ", ope.TableOperand.GetTableOperand(), member.Member.Name, binary.GetOperator(true), constant.FormatConstantExpression()).TrimStart());
+                    }
                     else if (binary.Left is BinaryExpression && binary.Right is BinaryExpression)
                     {
                         // like n => n.PartitionKey == "42" && n.RowKey == 42
@@ -51,9 +58,18 @@ namespace AzureStorageExtensions
                     }
                     else if (binary.Left is MemberExpression && binary.Right is MemberExpression)
                     {
-                        // like n => n.Date = DateTime.Now
-                        member = binary.Left as MemberExpression;
-                        result.Insert(0, string.Format("{0} ({1} {2} {3}) ", ope.TableOperand.GetTableOperand(), member.Member.Name, binary.GetOperator(), binary.Right.EvaluateExpression()).TrimStart());
+                        try
+                        {
+                            // like n => n.Date = DateTime.Now
+                            member = binary.Left as MemberExpression;
+                            result.Insert(0, string.Format("{0} ({1} {2} {3}) ", ope.TableOperand.GetTableOperand(), member.Member.Name, binary.GetOperator(), binary.Right.EvaluateExpression()).TrimStart());
+                        }
+                        catch
+                        {
+                            // like n => DateTime.Now = n.Date
+                            member = binary.Right as MemberExpression;
+                            result.Insert(0, string.Format("{0} ({1} {2} {3}) ", ope.TableOperand.GetTableOperand(), member.Member.Name, binary.GetOperator(true), binary.Left.EvaluateExpression()).TrimStart());
+                        }
                     }
                     else if (binary.Left is MemberExpression && binary.Right is NewExpression)
                     {
@@ -61,11 +77,23 @@ namespace AzureStorageExtensions
                         member = binary.Left as MemberExpression;
                         result.Insert(0, string.Format("{0} ({1} {2} {3}) ", ope.TableOperand.GetTableOperand(), member.Member.Name, binary.GetOperator(), binary.Right.EvaluateExpression()).TrimStart());
                     }
+                    else if (binary.Left is NewExpression && binary.Right is MemberExpression)
+                    {
+                        // like n => new DateTime(2012, 12, 21) == n.Date;
+                        member = binary.Right as MemberExpression;
+                        result.Insert(0, string.Format("{0} ({1} {2} {3}) ", ope.TableOperand.GetTableOperand(), member.Member.Name, binary.GetOperator(true), binary.Left.EvaluateExpression()).TrimStart());
+                    }
                     else if (binary.Left is MemberExpression && binary.Right is MethodCallExpression)
                     {
                         // like n => n.UniqueIdentifier == Guid.Parse("52317684-641D-40C0-86C7-9B57DF97AC7F")
                         member = binary.Left as MemberExpression;
                         result.Insert(0, string.Format("{0} ({1} {2} {3}) ", ope.TableOperand.GetTableOperand(), member.Member.Name, binary.GetOperator(), binary.Right.EvaluateExpression()).TrimStart());
+                    }
+                    else if (binary.Left is MethodCallExpression && binary.Right is MemberExpression)
+                    {
+                        // like n => n.UniqueIdentifier == Guid.Parse("52317684-641D-40C0-86C7-9B57DF97AC7F")
+                        member = binary.Right as MemberExpression;
+                        result.Insert(0, string.Format("{0} ({1} {2} {3}) ", ope.TableOperand.GetTableOperand(), member.Member.Name, binary.GetOperator(true), binary.Left.EvaluateExpression()).TrimStart());
                     }
                 }
                 else if (ope.Expression is MemberExpression)
@@ -120,7 +148,7 @@ namespace AzureStorageExtensions
             return string.Empty;
         }
 
-        private static string GetOperator(this Expression expression)
+        private static string GetOperator(this Expression expression, bool invert = false)
         {
             switch (expression.NodeType)
             {
@@ -129,13 +157,13 @@ namespace AzureStorageExtensions
                 case ExpressionType.NotEqual:
                     return "ne";
                 case ExpressionType.GreaterThan:
-                    return "gt";
+                    return invert ? "lt" : "gt";
                 case ExpressionType.GreaterThanOrEqual:
-                    return "ge";
+                    return invert ? "le" : "ge";
                 case ExpressionType.LessThan:
-                    return "lt";
+                    return invert ? "gt" : "lt";
                 case ExpressionType.LessThanOrEqual:
-                    return "le";
+                    return invert ? "ge" : "le";
                 default:
                     return string.Empty;
             }

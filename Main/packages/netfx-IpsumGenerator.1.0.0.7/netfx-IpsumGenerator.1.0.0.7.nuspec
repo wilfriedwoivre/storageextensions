@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>netfx-IpsumGenerator</id>
+    <version>1.0.0.7</version>
+    <title>NETFx Ipsum Generator</title>
+    <authors>Daniel Cazzulino,  kzu,  Clarius</authors>
+    <owners>Daniel Cazzulino,  kzu,  Clarius</owners>
+    <licenseUrl>http://netfx.codeplex.com/license</licenseUrl>
+    <projectUrl>http://netfx.codeplex.com/</projectUrl>
+    <iconUrl>http://download.codeplex.com/Project/Download/FileDownload.aspx?ProjectName=netfx&amp;DownloadId=199201</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Generates Lorem Ipsum words for use in tests.</description>
+    <summary>Generates Lorem Ipsum words for use in tests.</summary>
+    <tags>netfx test ipsum</tags>
+  </metadata>
+</package>
